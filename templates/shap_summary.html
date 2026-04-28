@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHAP Summary - Rainfall XAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 Global SHAP Explanations</h1>
+            <p>Understanding how the model makes decisions across all predictions</p>
+        </header>
+
+        <div class="shap-plots">
+            <div class="plot-card">
+                <h2>SHAP Summary Plot</h2>
+                <p>Shows the distribution of SHAP values for each feature</p>
+                <img src="/static/shap_summary.png" alt="SHAP Summary Plot" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="plot-error" style="display: none;">
+                    <p>⚠️ Plot not found. Run <code>python main.py</code> first to generate SHAP plots.</p>
+                </div>
+            </div>
+
+            <div class="plot-card">
+                <h2>SHAP Feature Importance (Bar)</h2>
+                <p>Average absolute SHAP value for each feature</p>
+                <img src="/static/shap_bar.png" alt="SHAP Bar Plot" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="plot-error" style="display: none;">
+                    <p>⚠️ Plot not found. Run <code>python main.py</code> first to generate SHAP plots.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="/" class="btn-link">← Back to Predictor</a>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rainfall XAI Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌧️ Rainfall XAI Predictor</h1>
+            <p>Enter weather conditions to predict heavy rainfall risk with AI explanations</p>
+        </header>
+
+        <div class="main-content">
+            <div class="form-section">
+                <h2>Weather Conditions</h2>
+                <form id="predictForm">
+                    {% for key, label, min_val, max_val, unit in features %}
+                    <div class="form-group">
+                        <label for="{{ key }}">{{ label }} ({{ min_val }} - {{ max_val }} {{ unit }})</label>
+                        <input type="number" step="0.1" id="{{ key }}" name="{{ key }}" 
+                               min="{{ min_val }}" max="{{ max_val }}" required
+                               placeholder="Enter {{ label.lower() }}">
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn-predict">🔍 Predict & Explain</button>
+                </form>
+            </div>
+
+            <div class="result-section" id="resultSection" style="display: none;">
+                <h2>Prediction Result</h2>
+                <div class="prediction-card" id="predictionCard">
+                    <div class="prediction-icon" id="predictionIcon"></div>
+                    <div class="prediction-text" id="predictionText"></div>
+                    <div class="probability-bar">
+                        <div class="prob-labels">
+                            <span>No Rain</span>
+                            <span>Heavy Rain</span>
+                        </div>
+                        <div class="prob-track">
+                            <div class="prob-fill" id="probFill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="risk-badge" id="riskBadge"></div>
+
+                <div class="explanation-section">
+                    <h3>📊 SHAP Explanation</h3>
+                    <p class="explanation-subtitle">How each feature influenced this prediction:</p>
+                    <ul class="explanation-list" id="explanationList"></ul>
+                </div>
+
+                <div class="waterfall-section" id="waterfallSection">
+                    <h3>🌊 SHAP Waterfall Plot</h3>
+                    <img id="waterfallImg" src="" alt="SHAP Waterfall Plot">
+                </div>
+            </div>
+        </div>
+
+        <div class="shap-summary-link">
+            <a href="/shap_summary" class="btn-link">📈 View Global SHAP Summary</a>
+        </div>
+    </div>
+
+    <div class="loading" id="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Analyzing with AI...</p>
+    </div>
+
+    <script>
+        document.getElementById('predictForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            const resultSection = document.getElementById('resultSection');
+            loading.style.display = 'flex';
+            resultSection.style.display = 'none';
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    loading.style.display = 'none';
+                    return;
+                }
+                
+                // Display prediction
+                const predictionIcon = document.getElementById('predictionIcon');
+                const predictionText = document.getElementById('predictionText');
+                const predictionCard = document.getElementById('predictionCard');
+                
+                if (data.prediction === 1) {
+                    predictionIcon.textContent = '🌧️';
+                    predictionText.textContent = data.prediction_label;
+                    predictionCard.className = 'prediction-card rain';
+                } else {
+                    predictionIcon.textContent = '☀️';
+                    predictionText.textContent = data.prediction_label;
+                    predictionCard.className = 'prediction-card no-rain';
+                }
+                
+                // Probability bar
+                const probFill = document.getElementById('probFill');
+                probFill.style.width = (data.probability[1] * 100) + '%';
+                
+                // Risk badge
+                const riskBadge = document.getElementById('riskBadge');
+                riskBadge.textContent = '⚠️ Risk Level: ' + data.risk_level;
+                riskBadge.className = 'risk-badge ' + data.risk_class;
+                
+                // Explanation list
+                const explanationList = document.getElementById('explanationList');
+                explanationList.innerHTML = '';
+                data.explanation.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = item.impact;
+                    li.innerHTML = `
+                        <span class="impact-bar" style="width: ${Math.min(Math.abs(item.value) * 50, 100)}%"></span>
+                        <span class="exp-text">${item.text}</span>
+                        <span class="exp-score">${item.value > 0 ? '+' : ''}${item.value.toFixed(3)}</span>
+                    `;
+                    explanationList.appendChild(li);
+                });
+                
+                // Waterfall plot
+                const waterfallImg = document.getElementById('waterfallImg');
+                waterfallImg.src = '/static/' + data.waterfall_plot + '?t=' + new Date().getTime();
+                document.getElementById('waterfallSection').style.display = 'block';
+                
+                resultSection.style.display = 'block';
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
+
